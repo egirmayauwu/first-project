@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slide Generator</title>
+    <style>
+        body {
+            background-color: black;
+            color: limegreen;
+            font-family: Courier, monospace;
+            font-size: 18px;
+            padding: 20px;
+            margin: 0;
+            overflow: hidden;
+        }
+        #log {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<div id="log">
+    <p>Initializing...</p>
+</div>
+
+<script>
+    const log = document.getElementById("log");
+
+    const fakeIPs = [
+        "176.83.924.29",
+        "176.381.90.213",
+        "176.82.39.193",
+        "192.83.293.29",
+        "116.293.93.39",
+        "132.423.189.231",
+        "182.109.492.154",
+        "165.83.211.230",
+        "175.219.340.123",
+        "159.97.212.91",
+        "210.432.91.185",
+        "202.131.249.72"
+    ];
+
+    const fakeMessages = [
+        "IP Interceptor: Active",
+        "Uploading...",
+        "Uploaded.",
+        "Activating Photon.rawr...",
+        "Exiting...",
+        "Rebooting in 3...",
+        "Rebooting in 2...",
+        "Rebooting in 1...",
+        "Rebooting...",
+        "Process completed.",
+        "Error: Unknown anomaly detected.",
+        "Warning: Simulation data corrupt.",
+        "Shutting down...",
+        "Error: Unable to shut down. Rebooting in 10 seconds."
+    ];
+
+    function getRandomItem(arr) {
+        return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function generateLog() {
+        let logText = "";
+        for (let i = 0; i < 10; i++) {
+            logText += `IP Interceptor:\n`;
+            for (let j = 0; j < 5; j++) {
+                logText += `${getRandomItem(fakeIPs)}\n`;
+            }
+            logText += `${getRandomItem(fakeMessages)}\n\n`;
+        }
+        return logText;
+    }
+
+    function updateLog() {
+        log.textContent = generateLog() + "\n" + getRandomItem(fakeMessages);
+    }
+
+    setInterval(updateLog, 3000); // Update log every 3 seconds
+</script>
+
+</body>
+</html>
