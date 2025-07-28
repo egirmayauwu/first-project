@@ -1,0 +1,392 @@
+# Ultimate PowerShell Proxy Activator GUI
+
+Clear-Host
+$Host.UI.RawUI.CursorSize = 25
+$Host.UI.RawUI.WindowTitle = "Proxy Activator v1.0"
+
+# Console size setup (recommended)
+$width = 100
+$height = 30
+$rawUI = $Host.UI.RawUI
+$size = $rawUI.WindowSize
+$bufferSize = $rawUI.BufferSize
+
+if ($size.Width -lt $width -or $size.Height -lt $height) {
+    try {
+        $rawUI.WindowSize = New-Object Management.Automation.Host.Size ($width, $height)
+        $rawUI.BufferSize = New-Object Management.Automation.Host.Size ($width, 3000)
+    } catch {
+        # ignore if can't set
+    }
+}
+
+# Colors
+$frameColor = "DarkGray"
+$titleColor = "Cyan"
+$buttonColor = "Red"
+$textColor = "White"
+$statusGoodColor = "Green"
+$statusWarnColor = "Yellow"
+$statusAlertColor = "Red"
+$logInfoColor = "DarkGreen"
+$logWarnColor = "Yellow"
+$logAlertColor = "Red"
+
+# Helpers
+
+function Write-At {
+    param(
+        [int]$x,
+        [int]$y,
+        [string]$text,
+        [ConsoleColor]$fg = $textColor,
+        [ConsoleColor]$bg = "Black"
+    )
+    $pos = $Host.UI.RawUI.CursorPosition
+    $Host.UI.RawUI.CursorPosition = New-Object System.Management.Automation.Host.Coordinates ($x, $y)
+    Write-Host $text -NoNewline -ForegroundColor $fg -BackgroundColor $bg
+    $Host.UI.RawUI.CursorPosition = $pos
+}
+
+function Draw-Frame {
+    param(
+        [int]$left,
+        [int]$top,
+        [int]$width,
+        [int]$height,
+        [string]$title = ""
+    )
+    # Draw top border
+    Write-At $left $top "┌" $frameColor
+    Write-At ($left+1) $top ("─" * ($width - 2)) $frameColor
+    Write-At ($left + $width - 1) $top "┐" $frameColor
+    # Draw bottom border
+    Write-At $left ($top + $height - 1) "└" $frameColor
+    Write-At ($left + 1) ($top + $height - 1) ("─" * ($width - 2)) $frameColor
+    Write-At ($left + $width - 1) ($top + $height - 1) "┘" $frameColor
+    # Draw side borders
+    for ($y = $top + 1; $y -lt $top + $height - 1; $y++) {
+        Write-At $left $y "│" $frameColor
+        Write-At ($left + $width - 1) $y "│" $frameColor
+    }
+    # Draw title if any
+    if ($title.Length -gt 0 -and $width -gt $title.Length + 4) {
+        $titleText = " $title "
+        $titlePos = [Math]::Floor(($width - $titleText.Length) / 2)
+        Write-At ($left + $titlePos) $top $titleText $titleColor
+    }
+}
+
+function Draw-TitleBar {
+    param(
+        [int]$width,
+        [string]$title = "Proxy Activator v1.0"
+    )
+    # Draw the top bar with buttons
+    Write-At 0 0 (" " * $width) $titleColor "DarkBlue"
+    $titleText = " $title "
+    Write-At 2 0 $titleText $titleColor "DarkBlue"
+    # Draw buttons [X] [—] etc at right side
+    $btnClose = "[X]"
+    $btnMin = "[—]"
+    $btnMax = "[□]"
+    $pos = $width - ($btnClose.Length + $btnMin.Length + $btnMax.Length + 2)
+    Write-At $pos 0 $btnMin "White" "DarkBlue"
+    Write-At ($pos + $btnMin.Length) 0 $btnMax "White" "DarkBlue"
+    Write-At ($pos + $btnMin.Length + $btnMax.Length) 0 $btnClose "Red" "DarkBlue"
+}
+
+function Clear-Box {
+    param(
+        [int]$left,
+        [int]$top,
+        [int]$width,
+        [int]$height
+    )
+    for ($y = $top; $y -lt $top + $height; $y++) {
+        Write-At $left $y (" " * $width)
+    }
+}
+
+# Draw GUI layout
+
+Clear-Host
+
+Draw-TitleBar -width $width
+
+# Main window frame
+Draw-Frame -left 0 -top 1 -width $width -height ($height - 1) -title " Proxy Server Activation "
+
+# Left panel: Status (20x15)
+Draw-Frame -left 2 -top 3 -width 40 -height 15 -title " STATUS "
+
+# Right panel: Logs (53x20)
+Draw-Frame -left 43 -top 3 -width 55 -height 20 -title " NETWORK LOGS "
+
+# Bottom panel: Commands (95x6)
+Draw-Frame -left 2 -top 19 -width 95 -height 10 -title " COMMANDS "
+
+# Static labels in status panel
+Write-At 4 5 "Proxy Status:" $textColor
+Write-At 4 7 "Nodes Connected:" $textColor
+Write-At 4 9 "Latency:" $textColor
+Write-At 4 11 "Encryption:" $textColor
+Write-At 4 13 "Traffic Rate:" $textColor
+
+# Fake dynamic values container
+$statusValues = @{
+    "Proxy Status" = "Initializing..."
+    "Nodes Connected" = 0
+    "Latency" = "N/A"
+    "Encryption" = "N/A"
+    "Traffic Rate" = "N/A"
+}
+
+# Function to update status panel
+function Update-StatusPanel {
+    param(
+        [hashtable]$status
+    )
+    Write-At 18 5 ($status["Proxy Status"].PadRight(20)) $statusGoodColor
+    Write-At 18 7 ($status["Nodes Connected"].ToString().PadRight(20)) $statusGoodColor
+    Write-At 18 9 ($status["Latency"].PadRight(20)) $statusGoodColor
+    Write-At 18 11 ($status["Encryption"].PadRight(20)) $statusGoodColor
+    Write-At 18 13 ($status["Traffic Rate"].PadRight(20)) $statusGoodColor
+}
+
+Update-StatusPanel -status $statusValues
+
+# Function to simulate progress bar
+function Show-ProgressBar {
+    param(
+        [int]$left,
+        [int]$top,
+        [int]$width,
+        [int]$percent
+    )
+    $filled = [Math]::Floor($width * $percent / 100)
+    $empty = $width - $filled
+    $bar = ("█" * $filled) + ("-" * $empty)
+    Write-At $left $top $bar $statusGoodColor
+}
+
+# Show initial progress bar in status
+Show-ProgressBar -left 4 -top 15 -width 35 -percent 0
+
+# Logs container
+$logTop = 4
+$logLeft = 45
+$logWidth = 51
+$logHeight = 16
+$logLines = @()
+
+# Function to add a log line (with color)
+function Add-LogLine {
+    param(
+        [string]$line,
+        [ConsoleColor]$color = $logInfoColor
+    )
+    if ($logLines.Count -ge $logHeight) {
+        $logLines = $logLines[1..($logLines.Count - 1)]
+    }
+    $logLines += @{ text = $line; color = $color }
+    # Redraw logs
+    for ($i=0; $i -lt $logLines.Count; $i++) {
+        Write-At $logLeft ($logTop + $i) $logLines[$i].text.PadRight($logWidth) $logLines[$i].color
+    }
+}
+
+# Populate initial logs
+Add-LogLine "Starting network interface..." $logInfoColor
+Add-LogLine "Loading proxy modules..." $logInfoColor
+Add-LogLine "Scanning firewall status..." $logInfoColor
+
+# Bottom command prompt variables
+$commandInput = ""
+$cursorVisible = $true
+$commandPromptX = 4
+$commandPromptY = 22
+
+function Draw-CommandPrompt {
+    param(
+        [string]$input,
+        [bool]$cursorOn
+    )
+    # Clear line first
+    Write-At $commandPromptX $commandPromptY (" " * 90)
+    $display = "CMD> " + $input
+    if ($cursorOn) {
+        $display += "_"
+    }
+    Write-At $commandPromptX $commandPromptY $display $textColor
+}
+
+# Initial draw command prompt
+Draw-CommandPrompt -input $commandInput -cursorOn $cursorVisible
+
+# Main simulation function (longer & more detailed)
+function Run-Simulation {
+    # Step 1: Initialization sequence
+    for ($p = 0; $p -le 100; $p += 5) {
+        Show-ProgressBar -left 4 -top 15 -width 35 -percent $p
+        $statusValues["Proxy Status"] = "Initializing... $p`%"
+        Update-StatusPanel -status $statusValues
+        Start-Sleep -Milliseconds 120
+        if ($p % 25 -eq 0) {
+            Add-LogLine "System check OK: Modules loaded." $logInfoColor
+        }
+    }
+
+    # Step 2: Connecting nodes
+    $statusValues["Proxy Status"] = "Connecting nodes..."
+    Update-StatusPanel -status $statusValues
+    for ($node = 1; $node -le 5; $node++) {
+        Add-LogLine "Connecting to node $node (192.168.10.$(20 + $node))..." $logInfoColor
+        $statusValues["Nodes Connected"] = $node
+        Update-StatusPanel -status $statusValues
+        for ($p = 0; $p -le 100; $p += 10) {
+            Show-ProgressBar -left 4 -top 15 -width 35 -percent $p
+            Start-Sleep -Milliseconds 100
+        }
+        Add-LogLine "Node $node connection established." $statusGoodColor
+    }
+
+    # Step 3: Latency check
+    $statusValues["Proxy Status"] = "Checking latency..."
+    Update-StatusPanel -status $statusValues
+    for ($i=0; $i -lt 10; $i++) {
+        $latency = Get-Random -Minimum 20 -Maximum 50
+        $statusValues["Latency"] = "$latency ms"
+        Update-StatusPanel -status $statusValues
+        Add-LogLine "Latency stable at $latency ms." $logInfoColor
+        Start-Sleep -Milliseconds 350
+    }
+
+    # Step 4: Encryption activation
+    $statusValues["Proxy Status"] = "Activating encryption..."
+    $statusValues["Encryption"] = "AES-256"
+    Update-StatusPanel -status $statusValues
+    for ($p = 0; $p -le 100; $p += 5) {
+        Show-ProgressBar -left 4 -top 15 -width 35 -percent $p
+        if ($p % 20 -eq 0) {
+            Add-LogLine "Encryption keys updated and validated." $logInfoColor
+        }
+        Start-Sleep -Milliseconds 100
+    }
+
+    # Step 5: Traffic simulation
+    $statusValues["Proxy Status"] = "Monitoring traffic..."
+    Update-StatusPanel -status $statusValues
+    for ($i=0; $i -lt 30; $i++) {
+        $rate = "{0:N2}" -f (Get-Random -Minimum 10 -Maximum 120)
+        $statusValues["Traffic Rate"] = "$rate Mbps"
+        Update-StatusPanel -status $statusValues
+        $ip = "$((Get-Random -Minimum 1 -Maximum 255)).$((Get-Random -Minimum 0 -Maximum 255)).$((Get-Random -Minimum 0 -Maximum 255)).$((Get-Random -Minimum 0 -Maximum 255))"
+        $port = @(80,443,8080,3128,1080) | Get-Random
+        $msgs = @("Packet forwarded","New session started","Proxy handshake","Connection reset","Encrypted tunnel established")
+        $msg = $msgs | Get-Random
+        $color = $logInfoColor
+        if ($msg -like "*reset*") { $color = $logWarnColor }
+        if ($msg -like "*reset*") { Add-LogLine "WARNING: $msg on $ip:$port" $logWarnColor }
+        else { Add-LogLine "$msg at $ip:$port" $color }
+        Start-Sleep -Milliseconds 200
+    }
+
+    # Final status
+    $statusValues["Proxy Status"] = "Proxy Server Active"
+    $statusValues["Nodes Connected"] = 5
+    $statusValues["Latency"] = "34 ms"
+    $statusValues["Encryption"] = "AES-256"
+    $statusValues["Traffic Rate"] = "98.23 Mbps"
+    Update-StatusPanel -status $statusValues
+
+    Add-LogLine "System stable. Proxy is now fully operational." $statusGoodColor
+
+    # Success beep sequence
+    for ($i=0; $i -lt 3; $i++) {
+        [console]::beep(800 + 200*$i, 200)
+        Start-Sleep -Milliseconds 150
+    }
+}
+
+# Run the simulation asynchronously (so input can work)
+$simJob = Start-Job -ScriptBlock ${function:Run-Simulation}
+
+# Command input & handler loop
+function Command-Handler {
+    param([string]$cmd)
+    switch ($cmd.ToLower()) {
+        'status' {
+            Add-LogLine "Command received: STATUS" $logInfoColor
+            Add-LogLine "Proxy Status: Active and stable." $statusGoodColor
+            Add-LogLine "Connected Nodes: 5" $statusGoodColor
+            Add-LogLine "Latency: 34 ms" $statusGoodColor
+            Add-LogLine "Encryption: AES-256" $statusGoodColor
+            Add-LogLine "Traffic Rate: 98.23 Mbps" $statusGoodColor
+        }
+        'help' {
+            Add-LogLine "Available commands: status, disconnect, help" $logInfoColor
+        }
+        'disconnect' {
+            Add-LogLine "Disconnecting proxy..." $statusWarnColor
+            for ($i=5; $i -ge 0; $i--) {
+                Add-LogLine "Disconnecting in $i seconds..." $statusWarnColor
+                Start-Sleep -Seconds 1
+            }
+            Add-LogLine "All connections terminated." $statusAlertColor
+            Stop-Job $simJob -Force
+            exit
+        }
+        default {
+            Add-LogLine "Unknown command: $cmd" $statusAlertColor
+        }
+    }
+}
+
+# Input loop with blinking cursor
+$cursorVisible = $true
+$inputBuffer = ""
+
+# Function to toggle cursor
+function Toggle-Cursor {
+    $cursorVisible = -not $cursorVisible
+}
+
+# Start cursor toggle timer
+$timer = New-Object Timers.Timer
+$timer.Interval = 500
+$timer.AutoReset = $true
+$timer.Enabled = $true
+Register-ObjectEvent -InputObject $timer -EventName Elapsed -Action {
+    $global:cursorVisible = -not $global:cursorVisible
+    Draw-CommandPrompt -input $global:inputBuffer -cursorOn $global:cursorVisible
+} | Out-Null
+
+# Draw initial prompt
+Draw-CommandPrompt -input $inputBuffer -cursorOn $cursorVisible
+
+# Read input char by char
+while ($true) {
+    $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+
+    if ($key.VirtualKeyCode -eq 13) {
+        # Enter pressed - process command
+        Write-Host ""
+        Command-Handler $inputBuffer.Trim()
+        $inputBuffer = ""
+    }
+    elseif ($key.VirtualKeyCode -eq 8) {
+        # Backspace
+        if ($inputBuffer.Length -gt 0) {
+            $inputBuffer = $inputBuffer.Substring(0, $inputBuffer.Length - 1)
+        }
+    }
+    elseif ($key.Character -match '[\w\d\s\-]') {
+        $inputBuffer += $key.Character
+    }
+    Draw-CommandPrompt -input $inputBuffer -cursorOn $cursorVisible
+}
+
+# Cleanup timer on exit
+$timer.Stop()
+$timer.Dispose()
