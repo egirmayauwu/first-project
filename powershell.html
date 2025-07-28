@@ -1,0 +1,392 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>0pk1ll</title>
+<style>
+  /* Base styling */
+  body, html {
+    margin: 0; padding: 0; height: 100%;
+    background: #1e1e1e;
+    color: #d4d4d4;
+    font-family: Consolas, monospace;
+    overflow: hidden;
+    user-select: none;
+  }
+  #overlay {
+    position: fixed;
+    top:0; left:0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.9);
+    color: #f44747;
+    font-size: 2rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    text-align: center;
+    padding: 1rem;
+    display: none;
+    flex-direction: column;
+  }
+  #overlay button {
+    margin-top: 20px;
+    font-size: 1.2rem;
+    padding: 10px 20px;
+    cursor: pointer;
+  }
+  #startBtn {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #569cd6;
+    color: white;
+    border: none;
+    padding: 20px 40px;
+    font-size: 1.5rem;
+    cursor: pointer;
+    border-radius: 6px;
+    box-shadow: 0 0 12px #569cd6aa;
+    user-select: none;
+    z-index: 10000;
+  }
+  #startBtn:hover {
+    background: #4177b8;
+  }
+  #terminal {
+    padding: 20px;
+    white-space: pre-wrap;
+    height: 100vh;
+    overflow-y: auto;
+    box-sizing: border-box;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Syntax coloring */
+  .cmd     { color: #569cd6; }
+  .string  { color: #ce9178; }
+  .var     { color: #9cdcfe; }
+  .success { color: #6a9955; }
+  .warn    { color: #dcdcaa; }
+  .error   { color: #f44747; }
+  .info    { color: #4ec9b0; }
+  .gray    { color: #808080; }
+  .blue    { color: #00bfff; }
+
+  /* Blinking cursor */
+  .blinking-cursor::after {
+    content: "_";
+    animation: blink 1s steps(1) infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  /* Progress bar styling */
+  .progress-container {
+    width: 100%;
+    background-color: #333;
+    border-radius: 4px;
+    margin: 10px 0;
+    overflow: hidden;
+  }
+  .progress-bar {
+    height: 16px;
+    background-color: #6a9955;
+    width: 0;
+    transition: width 0.3s ease;
+  }
+
+  /* Hacker popup style */
+  .hacker-popup {
+    position: fixed;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-family: Consolas, monospace;
+    color: #0f0;
+    background-color: rgba(0, 255, 0, 0.12);
+    box-shadow: 0 0 6px 2px rgba(0, 255, 0, 0.3);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 9998;
+    user-select: none;
+    animation: fadeInOut 4s ease forwards;
+  }
+
+  @keyframes fadeInOut {
+    0% { opacity: 0; transform: translateY(10px); }
+    10% { opacity: 1; transform: translateY(0); }
+    90% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-10px); }
+  }
+</style>
+</head>
+<body>
+
+<button id="startBtn">Start PowerShell Hack</button>
+
+<div id="overlay">
+  <div id="overlayText">⚠️ Task Manager Detected! Blocking termination attempts...</div>
+  <button id="closeOverlayBtn">Dismiss</button>
+</div>
+
+<div id="terminal" style="display:none;"></div>
+
+<audio id="typeSound" src="https://cdn.pixabay.com/audio/2022/03/15/audio_a6f21c3988.mp3" preload="auto"></audio>
+<audio id="errorSound" src="https://cdn.pixabay.com/audio/2022/03/15/audio_2491b7a89d.mp3" preload="auto"></audio>
+<audio id="successSound" src="https://cdn.pixabay.com/audio/2022/03/15/audio_5180210b2e.mp3" preload="auto"></audio>
+
+<script>
+  const startBtn = document.getElementById('startBtn');
+  const terminal = document.getElementById('terminal');
+  const overlay = document.getElementById('overlay');
+  const overlayText = document.getElementById('overlayText');
+  const closeOverlayBtn = document.getElementById('closeOverlayBtn');
+  const typeSound = document.getElementById('typeSound');
+  const errorSound = document.getElementById('errorSound');
+  const successSound = document.getElementById('successSound');
+
+  const hackerMessages = [
+    "Bypassing firewall...",
+    "Injecting packet...",
+    "Spoofing IP address...",
+    "Disabling security protocols...",
+    "Overriding encryption...",
+    "Exfiltrating data...",
+    "Re-routing traffic...",
+    "Clearing logs...",
+    "Masking presence...",
+    "Uploading payload...",
+    "Decrypting keys...",
+    "Evading detection...",
+    "Establishing backdoor...",
+    "Triggering exploit...",
+    "Rebooting proxy...",
+  ];
+
+  // Lines array (same as before, but feel free to add more lines here)
+  const lines = [
+    { text: "Windows PowerShell\nCopyright (C) Microsoft Corporation. All rights reserved.\n", class: "info" },
+    { text: "PS C:\\Users\\Admin> whoami", class: "cmd" },
+    { text: "admin\\Admin", class: "success" },
+    { text: "PS C:\\Users\\Admin> Import-Module SocialMediaExploit", class: "cmd" },
+    { text: "[+] Module loaded successfully.", class: "success" },
+    { text: "PS C:\\Users\\Admin> Connect-Target -Service instagram -User 'stargirl2002'", class: "cmd" },
+    { text: "[*] Resolving host instagram.com ...", class: "info" },
+    { text: "Name: instagram.com\nAddress: 157.240.18.35", class: "info" },
+    { text: "[✓] Host resolved.", class: "success" },
+    { text: "PS C:\\Users\\Admin> Start-SessionHijack -TokenSpoof -TargetUser 'stargirl2002'", class: "cmd" },
+    { text: "[*] Spoofing session token...", class: "warn" },
+    { text: "[✓] Session token spoofed successfully.", class: "success" },
+    { text: "PS C:\\Users\\Admin> Invoke-Bypass2FA -Method \"HardwareTokenOverride\"", class: "cmd" },
+    { text: "[*] Initiating 2FA bypass routine...", class: "warn" },
+    { text: "[✓] Hardware token bypass successful.", class: "success" },
+    { text: "PS C:\\Users\\Admin> Get-PrivateMessages -Limit 5", class: "cmd" },
+    { text: "DM(1): 'did you delete the pic? 😭'", class: "string" },
+    { text: "DM(2): 'we need to talk ASAP.'", class: "string" },
+    { text: "DM(3): 'u left your charger here lol'", class: "string" },
+    { text: "DM(4): 'shhh... dont tell him I messaged you again'", class: "string" },
+    { text: "DM(5): 'meet me behind the gym at 6pm'", class: "string" },
+    { text: "PS C:\\Users\\Admin> Export-Messages -Path \"C:\\Temp\\messages.json\"", class: "cmd" },
+    { text: "[+] Messages exported.", class: "success" },
+    { text: "PS C:\\Users\\Admin> Download-Media -Type images -Target 'stargirl2002' -Count 12", class: "cmd" },
+    { text: "Downloading media files...", class: "warn", progress: true, duration: 3500 },
+    { text: "[✓] Download complete.", class: "success" },
+    { text: "PS C:\\Users\\Admin> Start-Keylogger -Silent", class: "cmd" },
+    { text: "[✓] Keylogger injected and running.", class: "success" },
+    { text: "PS C:\\Users\\Admin> Get-WebcamFeed -Target '192.168.1.88'", class: "cmd" },
+    { text: "[*] Connecting to webcam stream...", class: "warn" },
+    { text: "[✓] Webcam feed active.", class: "success" },
+    { text: "PS C:\\Users\\Admin> Upload-Data -Server 'backup.darknet.biz' -File 'C:\\Temp\\data_dump.zip'", class: "cmd" },
+    { text: "Uploading data package...", class: "warn", progress: true, duration: 5000 },
+    { text: "[✓] Upload successful.", class: "success" },
+    { text: "PS C:\\Users\\Admin> Clear-Traces -TempFiles -Logs -History", class: "cmd" },
+    { text: "Removing temp files...", class: "warn" },
+    { text: "Clearing event logs...", class: "warn" },
+    { text: "Deleting PowerShell command history...", class: "warn" },
+    { text: "[✓] All traces removed.", class: "success" },
+    { text: "PS C:\\Users\\Admin> exit", class: "cmd" },
+    { text: "Session terminated.", class: "info" }
+  ];
+
+  let i = 0;
+  let isTyping = false;
+
+  function typeLine() {
+    if (i >= lines.length) {
+      showCursor();
+      return;
+    }
+
+    if (lines[i].progress) {
+      addProgress(lines[i].text, lines[i].class, lines[i].duration).then(() => {
+        i++;
+        typeLine();
+      });
+    } else {
+      const lineText = lines[i].text;
+      const lineClass = lines[i].class;
+
+      const lineDiv = document.createElement('div');
+      if(lineClass) lineDiv.classList.add(lineClass);
+      terminal.appendChild(lineDiv);
+
+      typeText(lineDiv, lineText, 30).then(() => {
+        i++;
+        setTimeout(typeLine, 200);
+      });
+    }
+  }
+
+  function typeText(element, text, delay) {
+    return new Promise((resolve) => {
+      let index = 0;
+      element.textContent = '';
+      isTyping = true;
+      function typeChar() {
+        if (index < text.length) {
+          element.textContent += text.charAt(index);
+          playSound(element.classList);
+          index++;
+          setTimeout(typeChar, delay);
+        } else {
+          isTyping = false;
+          resolve();
+        }
+      }
+      typeChar();
+    });
+  }
+
+  function playSound(classList) {
+    if (classList.contains('error')) {
+      errorSound.currentTime = 0;
+      errorSound.play();
+    } else if (classList.contains('success')) {
+      successSound.currentTime = 0;
+      successSound.play();
+    } else {
+      typeSound.currentTime = 0;
+      typeSound.play();
+    }
+  }
+
+  function showCursor() {
+    const cursor = document.createElement('div');
+    cursor.classList.add('blinking-cursor');
+    terminal.appendChild(cursor);
+    terminal.scrollTop = terminal.scrollHeight;
+  }
+
+  function addProgress(text, className, duration) {
+    return new Promise((resolve) => {
+      const container = document.createElement('div');
+      if (className) container.classList.add(className);
+      container.textContent = text;
+      terminal.appendChild(container);
+
+      const progressCont = document.createElement('div');
+      progressCont.classList.add('progress-container');
+      const progressBar = document.createElement('div');
+      progressBar.classList.add('progress-bar');
+      progressCont.appendChild(progressBar);
+      terminal.appendChild(progressCont);
+      terminal.scrollTop = terminal.scrollHeight;
+
+      let start = null;
+      function animate(timestamp) {
+        if (!start) start = timestamp;
+        let elapsed = timestamp - start;
+        let progressPercent = Math.min(elapsed / duration, 1) * 100;
+        progressBar.style.width = progressPercent + '%';
+        terminal.scrollTop = terminal.scrollHeight;
+        if (elapsed < duration) {
+          requestAnimationFrame(animate);
+        } else {
+          resolve();
+        }
+      }
+      requestAnimationFrame(animate);
+    });
+  }
+
+  // Fullscreen helper
+  async function enterFullScreen() {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      }
+    } catch (err) {
+      console.warn("Fullscreen request failed:", err);
+    }
+  }
+
+  // Detect and block ESC & Alt+F4
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      enterFullScreen();
+    }
+    if ((e.altKey && e.key === 'F4') || e.keyCode === 115) {
+      e.preventDefault();
+      showOverlay("⚠️ Task Manager Detected! Blocking termination attempts...");
+    }
+  });
+
+  // Re-enter fullscreen if exited
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement) {
+      enterFullScreen();
+    }
+  });
+
+  // Overlay show/hide
+  function showOverlay(message) {
+    overlayText.textContent = message;
+    overlay.style.display = 'flex';
+  }
+  closeOverlayBtn.addEventListener('click', () => {
+    overlay.style.display = 'none';
+  });
+
+  // Start button triggers fullscreen and starts typing
+  startBtn.addEventListener('click', async () => {
+    await enterFullScreen();
+    startBtn.style.display = 'none';
+    terminal.style.display = 'block';
+    typeLine();
+    startHackerPopups();
+  });
+
+  // Hacker popup animation
+  function createHackerPopup(message) {
+    const popup = document.createElement('div');
+    popup.classList.add('hacker-popup');
+    popup.textContent = message;
+
+    // Random position on screen
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    popup.style.left = (Math.random() * (vw - 200)) + 'px';
+    popup.style.top = (Math.random() * (vh - 50)) + 'px';
+
+    document.body.appendChild(popup);
+
+    // Remove popup after animation ends (4s)
+    setTimeout(() => {
+      popup.remove();
+    }, 4000);
+  }
+
+  function startHackerPopups() {
+    setInterval(() => {
+      const message = hackerMessages[Math.floor(Math.random() * hackerMessages.length)];
+      createHackerPopup(message);
+    }, 3000);
+  }
+</script>
+</body>
+</html>
