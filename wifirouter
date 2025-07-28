@@ -1,0 +1,273 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>WiFi Router Breach</title>
+<style>
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: #0b0b0b;
+    font-family: Consolas, monospace;
+    color: #33ff33;
+    overflow: hidden;
+    user-select: none;
+  }
+  #loginScreen, #fileSelectScreen, #terminalScreen, #controlPanel {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    text-align: center;
+    z-index: 1000;
+    background: #000;
+  }
+  input, select, button {
+    margin: 8px;
+    padding: 10px;
+    font-size: 16px;
+    background: #000;
+    color: #33ff33;
+    border: 1px solid #33ff33;
+    cursor: pointer;
+  }
+  #terminal {
+    padding: 20px;
+    white-space: pre-wrap;
+    height: 100vh;
+    overflow-y: auto;
+    box-sizing: border-box;
+    font-size: 16px;
+    width: 90%;
+    max-width: 900px;
+    background: #111;
+    border: 1px solid #33ff33;
+    border-radius: 8px;
+  }
+  .glitch-text {
+    color: #ff0033;
+    animation: flicker 0.1s infinite alternate;
+  }
+  @keyframes flicker {
+    0% { opacity: 1; }
+    100% { opacity: 0.2; }
+  }
+  .red-glow {
+    color: #ff3333;
+    text-shadow: 0 0 10px #ff3333, 0 0 20px #ff3333;
+    animation: pulseGlow 1s infinite;
+  }
+  @keyframes pulseGlow {
+    0% { text-shadow: 0 0 5px #ff3333; }
+    100% { text-shadow: 0 0 20px #ff3333; }
+  }
+  #controlPanelContent {
+    color: #33ff33;
+    width: 90%;
+    max-width: 1000px;
+    background: #111;
+    border: 1px solid #33ff33;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: left;
+  }
+  #controlPanel h2 {
+    margin-top: 0;
+  }
+  #controlPanel button {
+    margin-top: 20px;
+    background: #33ff33;
+    color: #000;
+    font-weight: bold;
+    border: none;
+    border-radius: 5px;
+  }
+  #warningPopup {
+    position: fixed;
+    top: 20px; left: 50%;
+    transform: translateX(-50%);
+    background: #ff3333;
+    color: #fff;
+    padding: 15px 25px;
+    border-radius: 8px;
+    font-family: Consolas, monospace;
+    font-size: 1.1rem;
+    z-index: 2000;
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+<div id="loginScreen" style="display:flex;">
+  <h2>Router Access Login</h2>
+  <form id="loginForm" onsubmit="checkLogin(); return false;">
+    <input type="text" id="username" placeholder="Username" required><br>
+    <input type="password" id="password" placeholder="Password" required><br>
+    <button type="submit">Login</button>
+  </form>
+</div>
+
+<div id="fileSelectScreen">
+  <h2>Select Exploit Module</h2>
+  <select id="moduleSelect">
+    <option value="spoof">ARP Spoofing Module</option>
+    <option value="backdoor">Firmware Backdoor Injection</option>
+    <option value="hijack">DNS Hijack Payload</option>
+  </select><br>
+  <button onclick="startHack()">Execute</button>
+</div>
+
+<div id="terminalScreen">
+  <div id="terminal"></div>
+</div>
+
+<div id="controlPanel">
+  <div id="controlPanelContent">
+    <h2>Router Control Panel</h2>
+    <p><strong>Status:</strong> <span id="panelStatus">Connected</span></p>
+    <p><strong>Active Module:</strong> <span id="panelModule"></span></p>
+    <p><strong>Router IP:</strong> 192.168.1.1</p>
+    <p><strong>Connected Devices:</strong></p>
+    <ul>
+      <li>Device A - 192.168.1.101</li>
+      <li>Device B - 192.168.1.102</li>
+      <li>Device C - 192.168.1.103</li>
+    </ul>
+    <button onclick="logout()">Logout</button>
+  </div>
+</div>
+
+<div id="warningPopup">⚠️ Termination attempt blocked! Root session active.</div>
+
+<audio id="soundType" src="https://actions.google.com/sounds/v1/foley/keyboard_typing_fast.ogg" preload="auto"></audio>
+<audio id="soundSuccess" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg" preload="auto"></audio>
+<audio id="soundError" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
+
+<script>
+  const loginScreen = document.getElementById("loginScreen");
+  const fileSelectScreen = document.getElementById("fileSelectScreen");
+  const terminalScreen = document.getElementById("terminalScreen");
+  const controlPanel = document.getElementById("controlPanel");
+  const terminal = document.getElementById("terminal");
+  const panelModule = document.getElementById("panelModule");
+  const warningPopup = document.getElementById("warningPopup");
+
+  const soundType = document.getElementById("soundType");
+  const soundSuccess = document.getElementById("soundSuccess");
+  const soundError = document.getElementById("soundError");
+
+  // Show login screen initially
+  loginScreen.style.display = "flex";
+
+  function checkLogin() {
+    const u = document.getElementById("username").value;
+    const p = document.getElementById("password").value;
+    if (u === "admin" && p === "router1337") {
+      loginScreen.style.display = "none";
+      fileSelectScreen.style.display = "flex";
+      requestFullscreen();
+    } else {
+      alert("Access Denied");
+      soundError.play();
+    }
+  }
+
+  function startHack() {
+    fileSelectScreen.style.display = "none";
+    terminalScreen.style.display = "flex";
+    panelModule.textContent = document.getElementById("moduleSelect").value.toUpperCase();
+    autoType();
+  }
+
+  function autoType() {
+    const lines = [
+      "Initializing attack module...",
+      "Scanning for local access points...",
+      "[✓] Found: NETGEAR_53 (WPA2), LinksysAlpha (WEP)",
+      "Launching selected exploit...",
+      "[✓] Payload injected: " + document.getElementById("moduleSelect").value.toUpperCase(),
+      "Attempting router bypass...",
+      "[✓] Root shell access granted.",
+      "Dumping credentials to /dev/hack/router.creds",
+      "Uploading spoofed firmware patch...",
+      "💥 WARNING: Integrity mismatch.",
+      "Retrying...",
+      "[✓] Firmware patched successfully.",
+      "Disabling router logs...",
+      "Self-erasing footprints...",
+      "[✓] Exploit complete.",
+      "Session closing..."
+    ];
+
+    let i = 0;
+    function printNext() {
+      if (i < lines.length) {
+        const line = document.createElement("div");
+        if (lines[i].includes("WARNING") || lines[i].includes("💥")) {
+          line.classList.add("glitch-text");
+          soundError.play();
+        } else if (lines[i].includes("Root shell")) {
+          line.classList.add("red-glow");
+          soundSuccess.play();
+        } else {
+          soundType.play();
+        }
+        line.textContent = lines[i];
+        terminal.appendChild(line);
+        terminal.scrollTop = terminal.scrollHeight;
+        i++;
+        setTimeout(printNext, 150 + Math.random() * 100);
+      } else {
+        // Show control panel after hack completes
+        setTimeout(() => {
+          terminalScreen.style.display = "none";
+          controlPanel.style.display = "flex";
+        }, 1000);
+      }
+    }
+    printNext();
+  }
+
+  function logout() {
+    controlPanel.style.display = "none";
+    loginScreen.style.display = "flex";
+    terminal.innerHTML = "";
+    document.getElementById("username").value = "";
+    document.getElementById("password").value = "";
+  }
+
+  // Fullscreen request
+  async function requestFullscreen() {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      }
+    } catch (err) {
+      console.warn("Fullscreen request failed:", err);
+    }
+  }
+
+  // Block ESC and Alt+F4 to keep fullscreen and show warning popup
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" || (e.altKey && e.key === "F4")) {
+      e.preventDefault();
+      warningPopup.style.display = "block";
+      setTimeout(() => {
+        warningPopup.style.display = "none";
+      }, 3000);
+      requestFullscreen();
+    }
+  });
+
+  // Re-enter fullscreen if exited
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement) {
+      requestFullscreen();
+    }
+  });
+</script>
+
+</body>
+</html>
